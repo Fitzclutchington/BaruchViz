@@ -1,17 +1,57 @@
-###########################################
-#                                         #
-# python Enrollment_status.py <filename>  #
-#                                         #
-###########################################
+'''
+This script is responsible for the spread sheet that creates the
+student enrollment status charts on iDashboard.
+
+This script requires a csv file with the name baruch_enrollment_status.csv and the following columns:
+
+    IRHeadcountSUM
+    IRFTESemesterTotalSUMSUM
+    IrCrdHrsSemTotalSUM
+    IRClassLevelDesc (grad or undergrad)
+    LINE (description of enrollment status eg. first time freshman)
+    IRTermEnrolledDate
+    SCHOOL
+    ACAD_PLAN (major)
+
+Note that each row is an individual student.
+
+This script generates 2 spreadsheets with the following columns:
+
+    for graduate students:
+        Semester - The semester enrolled (Winter 2016, Spring 2016) (pivot)
+        School - The school attended (pivot)
+        Count - Head Count, FTE, Credit Hrs (pivot)
+        Major
+        GRAD Continuing
+        GRAD New Nondegree
+        GRAD Permit-in
+        GRAD Re-admits
+        GRAD New Graduates
+
+    For undergraduate students:
+        Semester - The semester enrolled (Winter 2016, Spring 2016) (pivot)
+        School - The school attended (pivot)
+        Count - Head Count, FTE, Credit Hrs (pivot)
+        Major
+        UG New Regular Transfers
+        UG Continuing Regular Degree
+        UG Regular Re-admits
+        UG Continuing SEEK/CD
+        UG Continuing Nondegree
+        UG Permit-in
+        GRAD New Graduate
+        UG SEEK/CD Re-admits
+        UG Senior Citizens
+
+'''
 
 import pandas as pd
 import numpy as np
 from datetime import datetime
 
 
-# In[213]:
-
 def edit_school_names(school):
+    ''' A function to convert the abbreviated school names into full school names'''
     if school == 'Z':
         return 'Zicklin'
     elif school == 'W':
@@ -24,37 +64,46 @@ def edit_school_names(school):
         return 'Non-classified'
 
 def edit_semester_names(semester):
+    ''' A function to convert dates into semester names'''0
     if semester == '2/1/2016':
         return 'Spring 2016'
     else:
         return 'Winter 2015'
      
 def edit_major_names(major):
+    ''' A function to handle the case where no major is indicated'''
     if major == ' ':
         return 'Non-classified'
     else:
         return major
 
 
-# In[214]:
 
 def generate_full_mask(date_mask,school_mask,major_mask):
+    ''' A function to logical and all masks required when generating a column'''
     m1 = np.logical_and(date_mask,school_mask)
     full_mask = np.logical_and(m1,major_mask)
     return full_mask
 
 
-# In[215]:
-
 def generate_enrollment_dict(level_csv,semester_dates,schools,majors,level,count_dict,enroll_dict, data_columns):
-    #iterate through lists making rows in the form  
-    # Date | School | Count | Level | Major | 2014 | 2015 | Diffs
-    # Count is headcount, FTE, CREDITS
+    '''This function takes as input
+       -level_csv: a pandas dataframe that is masked for only graduate or undergraduate
+       -semester_dates: a list of semester dates
+       -schools: a list of schools
+       -majors: a list of majors
+       -level: a string that specifies GRAD or UGRAD
+       -count_dict: a dictionary to aid in the process of aggregating count types
+       -enroll_dict: a dictionary that will be populated in order to convert into a new dataframe
+       -data_columns: a list of the columns being generated
+
+       It then populates enroll_dict with values'''
+    #iterate through column values in order to create rows
     for semester in semester_dates:
         for school in schools:
             for major in majors[school][level]:
                 
-
+                #mask by semester 
                 mask_term = baruch_csv['IRTermEnrolledDate'] == semester
                 
                 #mask by school
@@ -100,12 +149,11 @@ def generate_enrollment_dict(level_csv,semester_dates,schools,majors,level,count
                             
 
 
-# In[216]:
-
 #open file and examine columns
 csv_filename = '../data/baruch_enrollment_status.csv'
 baruch_csv = pd.read_csv(csv_filename)
 column_names = baruch_csv.columns
+# These print statements were necessary to explore the kind of data in each column
 for col in column_names:
     print col,
     print pd.unique(baruch_csv[col]).shape
@@ -113,24 +161,20 @@ print pd.unique(baruch_csv['IRAdmissionCategoryDesc'])
 print pd.unique(baruch_csv['LINE'])
 print pd.unique(baruch_csv['IRAdmissionTypeDesc'])
 
+# Converts head count values, fte values, and credit hour values from strings to integers
 baruch_csv['IRHeadcountSUM'] = pd.to_numeric(baruch_csv['IRHeadcountSUM'], errors='coerce')
 baruch_csv['IRFTESemesterTotalSUMSUM'] = pd.to_numeric(baruch_csv['IRFTESemesterTotalSUMSUM'], errors='coerce')
 baruch_csv['IrCrdHrsSemTotalSUM'] = pd.to_numeric(baruch_csv['IrCrdHrsSemTotalSUM'], errors='coerce')
 
-
-
-# In[217]:
-
+# these lines create lists that will bbe interated through in generate_enrollment_dict
 levels = np.sort(pd.unique(baruch_csv['IRClassLevelDesc']))
 semester_dates = pd.unique(baruch_csv['IRTermEnrolledDate'])
 student_categories =  pd.unique(baruch_csv['LINE'])
 schools = pd.unique(baruch_csv['SCHOOL'])
-print semester_dates
 
 
-# In[218]:
-
-#set up lists necessary for iteration
+#set up dictionaries that will be used for iteration
+#Needs to be refactored
 majors = {}
 statuses = {}
 for school in schools:
@@ -141,24 +185,20 @@ for school in schools:
         total_mask = np.logical_and(school_mask,level_mask)
         school_frame = baruch_csv[total_mask]
         majors[school][level] = pd.unique(school_frame['ACAD_PLAN'])
-        
+
 for level in levels:
     level_mask = baruch_csv['IRClassLevelDesc'] == level
     school_frame = baruch_csv[level_mask]
     statuses[level] = pd.unique(baruch_csv['LINE'])
 
-
-# In[219]:
-
 first_columns = ['Semester','School','Count','Major']
 
+# creates a dictionary that aids in count aggregation
 counts = ['head_count','credits','fte']
 count_dict = {}
 for count in counts:
     count_dict[count] = []
 
-
-# In[220]:
 
 filenames = ['../data/baruch_enrollment_status_grad_script.csv','../data/baruch_enrollment_status_undergrad_script.csv']
 for level,filename in zip(levels,filenames):
@@ -168,28 +208,13 @@ for level,filename in zip(levels,filenames):
     
     data_columns = list(pd.unique(level_csv['LINE']))
     total_columns = first_columns + data_columns
-    
+
     enroll_dict = {}
     for col in total_columns:
         enroll_dict[col]= []
-
+    
     generate_enrollment_dict(level_csv,semester_dates,schools,majors,level,count_dict,enroll_dict, data_columns)
     idash_frame = pd.DataFrame(enroll_dict)
     idash_frame = idash_frame.reindex(columns=total_columns)
     idash_frame.to_csv(filename,index=False, header=True,mode='w')
-
-
-# In[143]:
-
-
-
-
-# In[ ]:
-
-
-
-
-# In[ ]:
-
-
 

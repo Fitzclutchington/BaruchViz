@@ -1,8 +1,8 @@
-###########################################
-#                                         #
-# python school_csv_static.py <filename>  #
-#                                         #
-###########################################
+###############################
+#                             #
+# python school_csv_static.py #
+#                             #
+###############################
 
 import pandas as pd
 import numpy as np
