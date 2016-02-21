@@ -1,9 +1,29 @@
-###############################
-#                             #
-# python school_csv_static.py #
-#                             #
-###############################
+'''
+This script calculates the enrollment differences between the current semester and the semester 
+last year and generates a spreadsheet that aggregates this data by major, school, and count type. 
+The script is currently static, meaning it only compares the current date to last years, 
+rather than all dates in the registration period.
 
+The input spread sheet needs to be named 'baruch_school_data.csv` and requires the following columns:
+
+    STRM (a code denoting the year registration)
+    MAJORSCHOOLS (school attended by student)
+    ACAD_CAREER (grad or undergrad)
+    UNT_BILLING (credit hours)
+    MAJOR1 (student's major)
+    FILEDATE (date the data was obtained)
+
+The output is a csv file with the following columns:
+
+    Date
+    School
+    Count
+    Academic_Level
+    Major
+    2014
+    2015
+    Diffs
+'''
 import pandas as pd
 import numpy as np
 from datetime import date, datetime, timedelta
@@ -23,6 +43,7 @@ def generate_fte(credits, level):
         return "Level is not valid"
 
 def edit_school_names(school):
+    '''Convert school abbreviation to full name'''
     if school == 'ZSB':
         return 'Zicklin'
     elif school == 'WSAS':
@@ -37,7 +58,6 @@ def perdelta(start, end, delta):
     while curr < end:
         yield curr
         curr += delta
-# In[13]:
 
 def generate_full_mask(date_mask,mask_level,school_mask,major_mask):
     m1 = np.logical_and(date_mask,mask_level)
@@ -46,38 +66,27 @@ def generate_full_mask(date_mask,mask_level,school_mask,major_mask):
     return full_mask
 
 
-# In[14]:
 
 # open file and get shape of data
 baruch_csv = pd.read_csv('../data/baruch_school_data.csv')
-#baruch_csv['LAST_ENRL_ADD_DT'] = pd.to_datetime(baruch_csv['LAST_ENRL_ADD_DT'])
-print baruch_csv.shape
-
-
-# In[15]:
 
 # Get header names and unique values in each column
 column_names = baruch_csv.columns
-#print ', '.join(column_names)
 
 
-#mask weird row
+#mask rows where no majors are defined
 blank_mask = baruch_csv['MAJORSCHOOLS'] != ' '
 baruch_csv = baruch_csv[blank_mask]
 
 
-# In[16]:
-
-#get dates and save
-
 enroll_dates_2015 = []
 enroll_dates_2014 = []
-#get 2015 dates
+
+#get 2015 dates and separate by weeks
 today = datetime.strptime(time.strftime("%m/%d/%Y"),"%m/%d/%Y") 
 for result in perdelta(date(2015, 11, 9), date(today.year,today.month,today.day), timedelta(days=7)):
     enroll_dates_2015.append(result)
 
-print enroll_dates_2015
 #get 2014 dates that match with 2015
 for date in enroll_dates_2015:
     #dt = datetime.strptime(date,"%m/%d/%Y")
@@ -87,8 +96,6 @@ for date in enroll_dates_2015:
 #set row to date time for easy comparison
 baruch_csv['LAST_ENRL_ADD_DT'] = pd.to_datetime(baruch_csv['LAST_ENRL_ADD_DT'])
 
-
-# In[17]:
 
 #set up lists necessary for iteration
 majors = {}
@@ -103,8 +110,6 @@ for school in schools:
         school_frame = baruch_csv[total_mask]
         majors[school][level] = pd.unique(school_frame['MAJOR1'])
 
-
-# In[18]:
 
 # initiate dictionary needed to create dataframe
 columns = ['Date','School','Count','Academic_Level','Major','2014','2015','Diffs']
