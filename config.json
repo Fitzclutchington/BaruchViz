@@ -1,0 +1,20 @@
+{
+    "enrollment_status":
+        {
+            "location" : "../data/baruch_enrollment_status.csv",
+            "outdir" : "../data/",
+            "backup_dir" : "../backup_data",
+            "grad_output" : "baruch_enrollment_status_grad_script",
+            "undergrad_output" : "baruch_enrollment_status_undergrad_script"
+        },
+
+    "school_csv_static":
+        {
+        	"strm_present": 1169,
+        	"strm_past" : 1159, 
+            "location" : "../data/baruch_school_data.csv'.csv",
+            "outdir" : "../data/",
+            "backup_dir" : "../backup_data",
+            "output" : "../data/baruch_enrollment_status_grad_script"
+        }
+}

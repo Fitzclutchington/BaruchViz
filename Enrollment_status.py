@@ -182,19 +182,3 @@ for level,filename in zip(levels,filenames):
     idash_frame = idash_frame.reindex(columns=total_columns)
     idash_frame.to_csv(filename,index=False, header=True,mode='w')
     
-
-
-# In[143]:
-
-
-
-
-# In[ ]:
-
-
-
-
-# In[ ]:
-
-
-
