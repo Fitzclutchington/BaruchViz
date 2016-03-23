@@ -6,10 +6,10 @@ bar chart in iDashboards.
 
 import pandas as pd
 import numpy as np
-from datetime import datetime
+from datetime import date, datetime, timedelta
+import time
+import json
 
-
-# In[213]:
 
 def edit_school_names(school):
     if school == 'Z':
@@ -24,10 +24,10 @@ def edit_school_names(school):
         return 'Non-classified'
 
 def edit_semester_names(semester):
-    if semester == '2/1/2016':
-        return 'Spring 2016'
+    if semester == '6/1/2016':
+        return 'Summer 2016'
     else:
-        return 'Winter 2015'
+        return 'Fall 2016'
      
 def edit_major_names(major):
     if major == ' ':
@@ -99,11 +99,20 @@ def generate_enrollment_dict(level_csv,semester_dates,schools,majors,level,count
                         enroll_dict[col].append(count_dict[count][i])
                             
 
+# open config and get parameters
+with open('config.json') as f:
+    config = json.load(f)["enrollment_status"]
 
-# In[216]:
+data_location = config["location"]
+outdir = config["outdir"]
+backup_dir = config["backup_dir"]
+grad_outfile = config["grad_output"]
+undergrad_outfile = config["undergrad_output"]
+
+semester_list = config["semester"]
 
 #open file and examine columns
-csv_filename = '../data/baruch_enrollment_status.csv'
+csv_filename = data_location
 baruch_csv = pd.read_csv(csv_filename)
 column_names = baruch_csv.columns
 """
@@ -118,10 +127,11 @@ baruch_csv['IRHeadcountSUM'] = pd.to_numeric(baruch_csv['IRHeadcountSUM'], error
 baruch_csv['IRFTESemesterTotalSUMSUM'] = pd.to_numeric(baruch_csv['IRFTESemesterTotalSUMSUM'], errors='coerce')
 baruch_csv['IrCrdHrsSemTotalSUM'] = pd.to_numeric(baruch_csv['IrCrdHrsSemTotalSUM'], errors='coerce')
 
+# date setup for file names
+today = datetime.strptime(time.strftime("%m/%d/%Y"),"%m/%d/%Y")
+backup_date = '_' + str(today.month) + '_' + str(today.day) + '_' + str(today.year)
 
-
-# In[217]:
-
+# set up column iterators
 levels = np.sort(pd.unique(baruch_csv['IRClassLevelDesc']))
 semester_dates = pd.unique(baruch_csv['IRTermEnrolledDate'])
 student_categories =  pd.unique(baruch_csv['LINE'])
@@ -166,7 +176,7 @@ for count in counts:
 
 # In[220]:
 
-filenames = ['../data/baruch_enrollment_status_grad_script.csv','../data/baruch_enrollment_status_undergrad_script.csv']
+filenames = [grad_outfile, undergrad_outfile]
 for level,filename in zip(levels,filenames):
     level_mask = baruch_csv['IRClassLevelDesc'] == level
     level_csv = baruch_csv[level_mask]
@@ -180,5 +190,11 @@ for level,filename in zip(levels,filenames):
     generate_enrollment_dict(level_csv,semester_dates,schools,majors,level,count_dict,enroll_dict, data_columns[level])
     idash_frame = pd.DataFrame(enroll_dict)
     idash_frame = idash_frame.reindex(columns=total_columns)
-    idash_frame.to_csv(filename,index=False, header=True,mode='w')
+
+    #set up location to save
+    dashboard_csv = outdir + '/' + filename + '.csv'
+    backup_csv = backup_dir + '/' + filename + backup_date + '.csv'
+
+    idash_frame.to_csv(dashboard_csv,index=False, header=True,mode='w')
+    idash_frame.to_csv(backup_csv,index=False, header=True,mode='w')
     

@@ -28,6 +28,7 @@ import pandas as pd
 import numpy as np
 from datetime import date, datetime, timedelta
 import time
+import json
 
 # In[12]:
 
@@ -66,9 +67,19 @@ def generate_full_mask(date_mask,mask_level,school_mask,major_mask):
     return full_mask
 
 
+#open config file and get parameters
+with open('config.json') as f:
+    config = json.load(f)["school_csv_static"]
+
+data_location = config["location"]
+strm_present = config["strm_present"]
+strm_past = config["strm_past"]
+outdir = config["outdir"]
+backup_dir = config["backup_dir"]
+outfile = config["output"]
 
 # open file and get shape of data
-baruch_csv = pd.read_csv('../data/baruch_school_data.csv')
+baruch_csv = pd.read_csv(data_location)
 
 # Get header names and unique values in each column
 column_names = baruch_csv.columns
@@ -79,11 +90,16 @@ blank_mask = baruch_csv['MAJORSCHOOLS'] != ' '
 baruch_csv = baruch_csv[blank_mask]
 
 
-enroll_dates_2015 = []
-enroll_dates_2014 = []
+enroll_dates_present = []
+enroll_dates_past = []
 
-#get 2015 dates and separate by weeks
+
 today = datetime.strptime(time.strftime("%m/%d/%Y"),"%m/%d/%Y") 
+present_year  = str(today.year)
+past_year = str(today.year-1)
+
+"""
+#get 2015 dates and separate by weeks
 for result in perdelta(date(2015, 11, 9), date(today.year,today.month,today.day), timedelta(days=7)):
     enroll_dates_2015.append(result)
 
@@ -92,7 +108,7 @@ for date in enroll_dates_2015:
     #dt = datetime.strptime(date,"%m/%d/%Y")
     prev_dt = datetime(date.year-1,date.month,date.day)
     enroll_dates_2014.append(prev_dt)
-
+"""
 #set row to date time for easy comparison
 baruch_csv['LAST_ENRL_ADD_DT'] = pd.to_datetime(baruch_csv['LAST_ENRL_ADD_DT'])
 
@@ -112,15 +128,15 @@ for school in schools:
 
 
 # initiate dictionary needed to create dataframe
-columns = ['Date','School','Count','Academic_Level','Major','2014','2015','Diffs']
+columns = ['Date','School','Count','Academic_Level','Major',past_year,present_year,'Diffs']
 counts = ['head_count','credits','fte']
 enroll_dict = {}
 count_dict = {}
 for col in columns:
     enroll_dict[col]= []
 for count in counts:
-    count_dict[count] ={'2014': 0,
-                        '2015': 0}
+    count_dict[count] ={'past_year': 0,
+                        'present_year': 0}
 start_date_2015 = '10/10/2015'
 start_date_2014 = '10/10/2014'
 
@@ -133,8 +149,8 @@ for level in levels:
         for major in majors[school][level]:
 
             # first mask by date
-            mask_2015 = baruch_csv['STRM'] == 1162
-            mask_2014 = baruch_csv['STRM'] == 1152
+            mask_present = baruch_csv['STRM'] == strm_present
+            mask_past = baruch_csv['STRM'] == strm_past
 
             # mask by level
             mask_level = baruch_csv['ACAD_CAREER'] == level
@@ -146,11 +162,11 @@ for level in levels:
             major_mask = baruch_csv['MAJOR1'] == major
 
             # Combine masks
-            full_mask_2014 = generate_full_mask(mask_2014,mask_level,school_mask,major_mask)
-            full_mask_2015 = generate_full_mask(mask_2015,mask_level,school_mask,major_mask)
+            full_mask_past = generate_full_mask(mask_past,mask_level,school_mask,major_mask)
+            full_mask_present = generate_full_mask(mask_present,mask_level,school_mask,major_mask)
 
             #calculate counts
-            for year,mask in zip(['2014','2015'],[full_mask_2014,full_mask_2015]):
+            for year,mask in zip([past_year,present_year],[full_mask_past,full_mask_present]):
                 head_count = baruch_csv[mask].shape[0]
                 credits = baruch_csv[mask]['UNT_BILLING'].sum()
                 fte = generate_fte(float(credits), level)
@@ -167,17 +183,24 @@ for level in levels:
                 enroll_dict['Academic_Level'].append(level)
                 enroll_dict['Major'].append(major)
 
-                count_2014 = count_dict[count]['2014']
-                count_2015 = count_dict[count]['2015']
-                enroll_dict['2014'].append(count_2014)
-                enroll_dict['2015'].append(count_2015)
-                enroll_dict['Diffs'].append(count_2015-count_2014)                    
+                count_past = count_dict[count][past_year]
+                count_present = count_dict[count][present_year]
+                enroll_dict[past_year].append(count_past)
+                enroll_dict[present_year].append(count_present)
+                enroll_dict['Diffs'].append(count_present - count_past)                    
 
 
-# In[19]:
+# setup output files
+date_string = '_' + str(today.month)+ '_' + str(today.day) + '_' + str(today.year)
+dashboard_location = outdir + '/' + outfile + '.csv'
+backup_location = backup_dir + '/' + outfile + date_string + '.csv'
 
 # generate new dataframe
 idash_frame = pd.DataFrame(enroll_dict)
 idash_frame = idash_frame.reindex(columns=columns)
-print idash_frame.shape
-idash_frame.to_csv('../data/static_school_major_script.csv',index=False, header=True,mode='w')
+
+# for idashboard
+idash_frame.to_csv(dashboard_location,index=False, header=True,mode='w')
+
+# for backup
+idash_frame.to_csv(backup_location,index=False, header=True,mode='w')

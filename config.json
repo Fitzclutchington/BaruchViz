@@ -1,20 +1,24 @@
 {
     "enrollment_status":
         {
-            "location" : "../data/baruch_enrollment_status.csv",
-            "outdir" : "../data/",
+            "location" : "../fall_data/baruch_enrollment_status.csv",
+            "outdir" : "../dashboard_data",
             "backup_dir" : "../backup_data",
             "grad_output" : "baruch_enrollment_status_grad_script",
-            "undergrad_output" : "baruch_enrollment_status_undergrad_script"
+            "undergrad_output" : "baruch_enrollment_status_undergrad_script",
+            "semester":[
+            	{"Fall" : 1169},
+            	{"Summer" : 1166}
+            ]
         },
 
     "school_csv_static":
         {
         	"strm_present": 1169,
         	"strm_past" : 1159, 
-            "location" : "../data/baruch_school_data.csv'.csv",
-            "outdir" : "../data/",
+            "location" : "../fall_data/baruch_school_data.csv",
+            "outdir" : "../dashboard_data",
             "backup_dir" : "../backup_data",
-            "output" : "../data/baruch_enrollment_status_grad_script"
+            "output" : "baruch_differences_script"
         }
 }
