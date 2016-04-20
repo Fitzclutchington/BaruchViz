@@ -74,8 +74,6 @@ with open('config.json') as f:
 data_location = config["location"]
 strm_present = config["strm_present"]
 strm_past = config["strm_past"]
-outdir = config["outdir"]
-backup_dir = config["backup_dir"]
 outfile = config["output"]
 
 # open file and get shape of data
@@ -190,17 +188,10 @@ for level in levels:
                 enroll_dict['Diffs'].append(count_present - count_past)                    
 
 
-# setup output files
-date_string = '_' + str(today.month)+ '_' + str(today.day) + '_' + str(today.year)
-dashboard_location = outdir + '/' + outfile + '.csv'
-backup_location = backup_dir + '/' + outfile + date_string + '.csv'
-
 # generate new dataframe
 idash_frame = pd.DataFrame(enroll_dict)
 idash_frame = idash_frame.reindex(columns=columns)
 
 # for idashboard
-idash_frame.to_csv(dashboard_location,index=False, header=True,mode='w')
+idash_frame.to_csv(outfile,index=False, header=True,mode='w')
 
-# for backup
-idash_frame.to_csv(backup_location,index=False, header=True,mode='w')

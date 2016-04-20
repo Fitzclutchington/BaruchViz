@@ -104,8 +104,6 @@ with open('config.json') as f:
     config = json.load(f)["enrollment_status"]
 
 data_location = config["location"]
-outdir = config["outdir"]
-backup_dir = config["backup_dir"]
 grad_outfile = config["grad_output"]
 undergrad_outfile = config["undergrad_output"]
 
@@ -142,7 +140,8 @@ data_columns = {'GRADUATE': ['GRAD Continuing Degree', 'GRAD New Nondegree',
                 'UNDERGRADUATE': ['UG New Regular Transfers', 'UG Continuing Regular Degree', 
                                   'UG Regular Re-admits', 'UG Continuing SEEK/CD', 'UG New Nondegree', 
                                   'UG Continuing Nondegree', 'UG Permit-in', 'GRAD New Graduate', 
-                                  'UG SEEK/CD Re-admits', 'UG Senior Citizens']}
+                                  'UG Regular First-time Freshmen', 'UG SEEK/CD Re-admits', 'UG Senior Citizens',
+                                  'UG SEEK/CD New Transfers']}
 
 # In[218]:
 
@@ -191,10 +190,7 @@ for level,filename in zip(levels,filenames):
     idash_frame = pd.DataFrame(enroll_dict)
     idash_frame = idash_frame.reindex(columns=total_columns)
 
-    #set up location to save
-    dashboard_csv = outdir + '/' + filename + '.csv'
-    backup_csv = backup_dir + '/' + filename + backup_date + '.csv'
 
-    idash_frame.to_csv(dashboard_csv,index=False, header=True,mode='w')
-    idash_frame.to_csv(backup_csv,index=False, header=True,mode='w')
+    idash_frame.to_csv(filename,index=False, header=True,mode='w')
+    
     
