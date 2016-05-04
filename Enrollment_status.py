@@ -75,7 +75,7 @@ def generate_enrollment_dict(level_csv,semester_dates,schools,majors,level,count
                     status_mask = baruch_csv['LINE'] == col
                     new_mask = np.logical_and(full_mask,status_mask)
 
-                    head_count = baruch_csv[new_mask]['IRHeadcountSUM'].sum()
+                    head_count = baruch_csv[new_mask]['IRHeadcountSUM'].shape[0]
                     credits = baruch_csv[new_mask]['IrCrdHrsSemTotalSUM'].sum()
                     fte = baruch_csv[new_mask]['IRFTESemesterTotalSUMSUM'].sum()
 
